@@ -13,6 +13,7 @@ The island is generated from real-Earth coastline, relief and Köppen climate da
 - Caves to mine rocks, ores and crystals, with small monsters to fight
 - Fishing and bug-catching, plus a museum to donate fish, insects, meteorites and gems
 - Villagers and merfolk follow daily routines (farming, fishing, shopping, sheltering from rain, sleeping)
+- Spot baby animals with wild herds, from capybara pups to elephant calves. Press G nearby to feed and befriend them.
 
 ## Controls
 WASD move · Shift run · E interact · Q swing (in the mine) · I pack · M map · J quests · C character · F torch

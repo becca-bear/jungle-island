@@ -1010,15 +1010,29 @@ function updatePen(dt){if(!PEN.length)return;const P=PEN[0];if(Math.hypot(P.wx-p
       const v=Math.min(d,sp*dt);p.x+=Math.sin(p.head)*v;p.z+=Math.cos(p.head)*v;}}
     animLegs(p.a,sp,dt,false);g.position.set(p.x,.08,p.z);g.rotation.y=p.head;const u=g.userData;if(u.tail)u.tail.rotation.y=Math.sin(clock*(sp?6:3)+p.x*3)*.45;}}
 
-function hogsFx(b,w,h,d,rr,i){const tim=LM(0x2e2218),st=LM(0x7c786f),iron=LM(0x24242a),fz=d/2+.07;
-  tbox(w+.3,1.0,d+.3,st,0,.2,0,b);
+const TEXC={},TEXM={};
+function texGen(kind){if(TEXC[kind])return TEXC[kind];const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');let sd=kind.length*977+13;const R=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  const g=v=>{v=Math.max(0,Math.min(255,v|0));return'rgb('+v+','+v+','+v+')';};
+  const speck=(n,a)=>{for(let i=0;i<n;i++){x.fillStyle=g(128+(R()-.5)*a);x.fillRect(R()*256,R()*256,1+R()*2,1+R()*2);}};
+  if(kind==='stone'){x.fillStyle=g(90);x.fillRect(0,0,256,256);for(let r=0;r<8;r++){const off=r%2?32:0;for(let k=-1;k<5;k++){const bw=64-(R()*10|0),bx=k*64+off+2,by=r*32+2,v=165+R()*70;x.fillStyle=g(v);x.fillRect(bx,by,bw-4,28);x.fillStyle=g(v+22);x.fillRect(bx,by,bw-4,3);x.fillStyle=g(v-40);x.fillRect(bx,by+25,bw-4,3);}}speck(1800,70);}
+  else if(kind==='plaster'){x.fillStyle=g(222);x.fillRect(0,0,256,256);for(let i=0;i<26;i++){const gr=x.createRadialGradient(0,0,0,0,0,10+R()*40);gr.addColorStop(0,'rgba(0,0,0,'+(.05+R()*.07)+')');gr.addColorStop(1,'rgba(0,0,0,0)');x.save();x.translate(R()*256,R()*256);x.fillStyle=gr;x.fillRect(-60,-60,120,120);x.restore();}speck(2600,46);}
+  else if(kind==='slate'){x.fillStyle=g(50);x.fillRect(0,0,256,256);x.save();x.translate(256,0);x.rotate(Math.PI/2);for(let r=0;r<10;r++){const off=r%2?32:0,y0=r*25.6;for(let k=-1;k<5;k++){const v=125+R()*85,bx=k*64+off+1;x.fillStyle=g(v);x.fillRect(bx,y0,62,24);x.fillStyle=g(v-48);x.fillRect(bx,y0+19,62,5);x.fillStyle=g(v+20);x.fillRect(bx,y0,62,2);}}x.restore();speck(1400,50);}
+  else{x.fillStyle=g(150);x.fillRect(0,0,256,256);for(let i=0;i<90;i++){x.fillStyle=g(120+R()*70);x.fillRect(R()*256,0,1+R()*3,256);}for(let i=0;i<3;i++){x.fillStyle=g(80);x.beginPath();x.ellipse(R()*256,R()*256,5,9,0,0,6.3);x.fill();}speck(700,40);}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;return TEXC[kind]=t;}
+function texMat(kind,col,rx,ry){rx=Math.max(1,Math.round(rx*2)/2);ry=Math.max(1,Math.round(ry*2)/2);const k=kind+col+'|'+rx+'|'+ry;if(TEXM[k])return TEXM[k];const t=texGen(kind).clone();t.needsUpdate=true;t.repeat.set(rx,ry);return TEXM[k]=new THREE.MeshLambertMaterial({map:t,color:col});}
+function wallBox(w,h,d,kind,col,x,y,z,b,u){u=u||3;const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),[texMat(kind,col,d/u,h/u),texMat(kind,col,d/u,h/u),texMat(kind,col,w/u,d/u),texMat(kind,col,w/u,d/u),texMat(kind,col,w/u,h/u),texMat(kind,col,w/u,h/u)]);
+  m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;b.add(m);return m;}
+function hogsFx(b,w,h,d,rr,i){const tim=texMat('wood',0x4a3626,1,1),st=texMat('stone',0xb0aca0,1,1),iron=LM(0x24242a),fz=d/2+.07;
+  wallBox(w+.3,1.0,d+.3,'stone',0xb0aca0,0,.2,0,b,2.6);
   for(const sx of[-1,-.5,0,.5,1])if(Math.abs(sx)!==0||i%2===0)tbox(.2,h*.85,.12,tim,sx*(w/2-.1),h*.45+.5,fz,b);
   tbox(w,.2,.12,tim,0,h*.62,fz,b);tbox(w,.2,.12,tim,0,h-.1,fz,b);
   for(const sx of[-1,1]){const br=tbox(.16,Math.hypot(w/4,h*.3),.1,tim,sx*w*.32,h*.8,fz,b);br.rotation.z=sx*Math.atan2(w/4,h*.3);}
   for(const sx of[-1,1])tbox(.14,.14,d+.2,tim,sx*(w/2+.02),h-.1,0,b);
   for(const sx of[-1,1]){tbox(.36,.5,.36,lampMat,sx*1.6,2.7,d/2+.3,b);tbox(.5,.08,.5,iron,sx*1.6,2.98,d/2+.3,b);tbox(.5,.08,.5,iron,sx*1.6,2.42,d/2+.3,b);tbox(.8,.06,.06,iron,sx*1.2,2.7,d/2+.12,b);}
-  const cx=(i%2?-1:1)*(w/2-1.3),ch=tbox(.9,3.4,.9,st,cx,h+2.6,-d/4-.3,b);tbox(1.15,.2,1.15,LM(0x5a564e),cx,h+4.4,-d/4-.3,b);
+  const cx=(i%2?-1:1)*(w/2-1.3),ch=wallBox(.9,3.4,.9,'stone',0xa09c90,cx,h+2.6,-d/4-.3,b,1.6);tbox(1.15,.2,1.15,LM(0x5a564e),cx,h+4.4,-d/4-.3,b);
   for(let k=0;k<2;k++)tbox(.24,.5,.24,LM(0x4a463e),cx+(k?.26:-.26),h+4.75,-d/4-.3,b);
+  for(const sx of[-1,1]){const wx=sx*(w/2-1.7),wy=h*.56;tbox(.07,1.2,.14,tim,wx,wy,d/2+.08,b);tbox(1.2,.07,.14,tim,wx,wy,d/2+.08,b);tbox(1.32,.1,.16,tim,wx,wy+.62,d/2+.08,b);
+    for(const q of[-1,1])tbox(.36,1.2,.08,tim,wx+q*.78,wy,d/2+.08,b);}
   const dz=d/2-1.1;
   tbox(1.5,1.3,1.1,LM(0xb8b2a4),0,h+2.0,dz,b);tbox(1.2,1.0,.12,winMat,0,h+2.05,dz+.58,b);const dr=tbox(1.9,.14,1.5,LM(0x2a2a3a),0,h+2.78,dz,b);dr.rotation.z=0;
   const cap=tbox(1.7,.14,1.5,LM(0x2a2a3a),-.5,h+2.9,dz,b);cap.rotation.z=.5;const cp2=tbox(1.7,.14,1.5,LM(0x2a2a3a),.5,h+2.9,dz,b);cp2.rotation.z=-.5;}
@@ -1031,9 +1045,9 @@ function buildTown(){PEN.length=0;townDoors=[];townSites=null;shops=[];villagers
     if(id==='home'){const o=buildCottage(b);home={x:T.x+bx+sa*(o.d/2+2.4),z:T.z+bz+ca*(o.d/2+2.4)};for(const ox of[-o.w/3,0,o.w/3])addTrunk(T.x+bx+ox*ca,T.z+bz-ox*sa,o.d/2+.3);rng();rng();rng();continue;}
     if(id==='furn'||id==='museum'){rng();rng();rng();}
     const w=id?9:6.5+rng()*1.5,d=id?7:6,h=id?4.4:3.6+rng()*.8;
-    tbox(w,h,d,LM(sd?sd.wall:walls[i%5]),0,h/2-.3,0,b).scale.y=1.15;
+    wallBox(w,h,d,(i%3===1)?'stone':'plaster',sd?sd.wall:walls[i%5],0,h/2-.3,0,b,(i%3===1)?3:4).scale.y=1.15;
     const rr=(d+1.2)/1.732;let rg=Cyl(rr,rr,w+1,3);rg.rotateY(Math.PI/2);rg.rotateZ(Math.PI/2);rg.scale(1,.85,1);rg=rg.toNonIndexed();rg.computeVertexNormals();
-    const roof=new THREE.Mesh(rg,LM(sd?sd.roof:roofs[i%5]));roof.position.y=h+rr*.425;roof.castShadow=true;b.add(roof);snowCap(roof,b);hogsFx(b,w,h,d,rr,i);
+    const roof=new THREE.Mesh(rg,texMat('slate',sd?sd.roof:roofs[i%5],7.5,(w+1)/2.5));roof.position.y=h+rr*.425;roof.castShadow=true;b.add(roof);snowCap(roof,b);hogsFx(b,w,h,d,rr,i);
     tbox(1.3,2.3,.16,LM(0x5a3a22),0,1.15,d/2+.04,b);townDoors.push({x:T.x+bx+sa*(d/2+1.3),z:T.z+bz+ca*(d/2+1.3)});
     for(const sx of[-1,1]){tbox(1.2,1.2,.12,winMat,sx*(w/2-1.7),h*.56,d/2+.04,b);tbox(1.4,.2,.34,wood,sx*(w/2-1.7),h*.56-.74,d/2+.14,b);
       tbox(1.2,.16,.2,LM([0xe84a6a,0xf2c84a,0xc86ae8][i%3]),sx*(w/2-1.7),h*.56-.56,d/2+.16,b);}

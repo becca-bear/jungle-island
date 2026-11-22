@@ -1016,6 +1016,7 @@ function texGen(kind){if(TEXC[kind])return TEXC[kind];const c=document.createEle
   const speck=(n,a)=>{for(let i=0;i<n;i++){x.fillStyle=g(128+(R()-.5)*a);x.fillRect(R()*256,R()*256,1+R()*2,1+R()*2);}};
   if(kind==='stone'){x.fillStyle=g(90);x.fillRect(0,0,256,256);for(let r=0;r<8;r++){const off=r%2?32:0;for(let k=-1;k<5;k++){const bw=64-(R()*10|0),bx=k*64+off+2,by=r*32+2,v=165+R()*70;x.fillStyle=g(v);x.fillRect(bx,by,bw-4,28);x.fillStyle=g(v+22);x.fillRect(bx,by,bw-4,3);x.fillStyle=g(v-40);x.fillRect(bx,by+25,bw-4,3);}}speck(1800,70);}
   else if(kind==='plaster'){x.fillStyle=g(222);x.fillRect(0,0,256,256);for(let i=0;i<26;i++){const gr=x.createRadialGradient(0,0,0,0,0,10+R()*40);gr.addColorStop(0,'rgba(0,0,0,'+(.05+R()*.07)+')');gr.addColorStop(1,'rgba(0,0,0,0)');x.save();x.translate(R()*256,R()*256);x.fillStyle=gr;x.fillRect(-60,-60,120,120);x.restore();}speck(2600,46);}
+  else if(kind==='thatch'){x.fillStyle=g(150);x.fillRect(0,0,256,256);for(let i=0;i<900;i++){x.fillStyle=g(90+R()*130);x.fillRect(R()*256,R()*256,1+R()*2,14+R()*40);}for(let r=0;r<6;r++){x.fillStyle='rgba(0,0,0,.28)';x.fillRect(0,r*43+36,256,4);}speck(900,60);}
   else if(kind==='slate2'){x.fillStyle=g(50);x.fillRect(0,0,256,256);for(let r=0;r<10;r++){const off=r%2?32:0,y0=r*25.6;for(let k=-1;k<5;k++){const v=125+R()*85,bx=k*64+off+1;x.fillStyle=g(v);x.fillRect(bx,y0,62,24);x.fillStyle=g(v-48);x.fillRect(bx,y0+19,62,5);x.fillStyle=g(v+20);x.fillRect(bx,y0,62,2);}}speck(1400,50);}
   else if(kind==='slate'){x.fillStyle=g(50);x.fillRect(0,0,256,256);x.save();x.translate(256,0);x.rotate(Math.PI/2);for(let r=0;r<10;r++){const off=r%2?32:0,y0=r*25.6;for(let k=-1;k<5;k++){const v=125+R()*85,bx=k*64+off+1;x.fillStyle=g(v);x.fillRect(bx,y0,62,24);x.fillStyle=g(v-48);x.fillRect(bx,y0+19,62,5);x.fillStyle=g(v+20);x.fillRect(bx,y0,62,2);}}x.restore();speck(1400,50);}
   else{x.fillStyle=g(150);x.fillRect(0,0,256,256);for(let i=0;i<90;i++){x.fillStyle=g(120+R()*70);x.fillRect(R()*256,0,1+R()*3,256);}for(let i=0;i<3;i++){x.fillStyle=g(80);x.beginPath();x.ellipse(R()*256,R()*256,5,9,0,0,6.3);x.fill();}speck(700,40);}
@@ -1044,18 +1045,33 @@ function wobGeo(g,amp,seed){const p=g.attributes.position,hh=g.parameters.height
 function wallBlock(w,h,d,kind,col,x,y,z,b,u,amp,seed){const g=wobGeo(new THREE.BoxGeometry(w,h,d,6,6,6),amp,seed||1);
   const m=new THREE.Mesh(g,[texMat(kind,col,d/u,h/u),texMat(kind,col,d/u,h/u),texMat(kind,col,w/u,d/u),texMat(kind,col,w/u,d/u),texMat(kind,col,w/u,h/u),texMat(kind,col,w/u,h/u)]);
   m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;b.add(m);return m;}
-function swRoofGeo(L,hd,rise,over,sag){const n=10,m=12,E=hd+over,pz=[],py=[];
+function swRoofGeo(L,hd,rise,over,sag,t0){t0=t0||0;const n=10,m=12,E=hd+over,pz=[],py=[];
   const prof=t=>{const z=E*(1-t),yl=rise*(1-z/hd),k=Math.max(0,(z-hd*.5)/(E-hd*.5));return yl+.62*k*k*k;};
-  for(let i=0;i<=n;i++){const t=i/n;pz.push(E*(1-t));py.push(prof(t));}
+  for(let i=0;i<=n;i++){const t=t0+(1-t0)*i/n;pz.push(E*(1-t));py.push(prof(t));}
   const Z=[],Y=[];for(let i=0;i<=n;i++){Z.push(pz[i]);Y.push(py[i]);}for(let i=n-1;i>=0;i--){Z.push(-pz[i]);Y.push(py[i]);}
   const arc=[0];for(let i=1;i<Z.length;i++)arc.push(arc[i-1]+Math.hypot(Z[i]-Z[i-1],Y[i]-Y[i-1]));const tot=arc[arc.length-1];
   const pos=[],uv=[],idx=[];for(let i=0;i<Z.length;i++)for(let j=0;j<=m;j++){const u=j/m,rid=1-Math.abs(Z[i])/E;
     pos.push((u-.5)*L,Y[i]-sag*Math.sin(u*Math.PI)*rid*rid,Z[i]);uv.push(u,arc[i]/tot);}
   for(let i=0;i<Z.length-1;i++)for(let j=0;j<m;j++){const a=i*(m+1)+j,b=a+1,c=a+m+1,d=c+1;idx.push(a,c,b,b,c,d);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();g.userData.tot=tot;return g;}
-function addSwRoof(b,L,hd,rise,over,col,x,y,z,ry,snow){const g=swRoofGeo(L,hd,rise,over,.14),tm=texMat('slate2',col,L/2.2,g.userData.tot/3.0);tm.side=THREE.DoubleSide;
+function addSwRoof(b,L,hd,rise,over,col,x,y,z,ry,snow,sag,kind){const g=swRoofGeo(L,hd,rise,over,sag==null?.14:sag),tm=kind==='thatch'?texMat('thatch',col,L/3,g.userData.tot/3):texMat('slate2',col,L/2.2,g.userData.tot/3.0);tm.side=THREE.DoubleSide;
   const r=new THREE.Mesh(g,tm);r.position.set(x,y,z);r.rotation.y=ry;r.castShadow=r.receiveShadow=true;b.add(r);
-  const dk=texMat('wood',0x2a2018,L/2,3);dk.side=THREE.DoubleSide;const u=new THREE.Mesh(g,dk);u.position.set(x,y-.17,z);u.rotation.y=ry;b.add(u);if(snow)snowCap(r,b);return r;}
+  const dk=texMat('wood',0x2a2018,L/2,3);dk.side=THREE.DoubleSide;const u=new THREE.Mesh(g,dk);u.position.set(x,y-.17,z);u.rotation.y=ry;b.add(u);if(snow)snowCap(r,b);
+  const sg=swRoofGeo(L*.98,hd,rise,over,sag==null?.14:sag,.5),sm=new THREE.Mesh(sg,snowPerm);sm.position.set(x,y+.1,z);sm.rotation.y=ry;sm.receiveShadow=true;b.add(sm);return r;}
+const snowPerm=new THREE.MeshLambertMaterial({color:0xf2f6fc,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
+const bowMat=new THREE.MeshLambertMaterial({color:0xa8d0e0,transparent:true,opacity:.34,side:THREE.DoubleSide,depthWrite:false});
+function bowWindow(b,cx,zf,i){const rb=1.5,y0=.95,hgt=1.9,tim=texMat('wood',0x3a2a1c,1,1);
+  const gl=new THREE.Mesh(new THREE.CylinderGeometry(rb,rb,hgt,14,1,true,-Math.PI/2,Math.PI),bowMat);gl.position.set(cx,y0+hgt/2,zf);b.add(gl);
+  const pt=a=>[cx+rb*Math.sin(a),zf+rb*Math.cos(a)];
+  for(let k=0;k<=8;k++){const a=-Math.PI/2+k*Math.PI/8,p=pt(a);tbox(.08,hgt,.08,tim,p[0],y0+hgt/2,p[1],b);}
+  for(const yy of[y0,y0+hgt*.5,y0+hgt])for(let k=0;k<8;k++){const a0=-Math.PI/2+k*Math.PI/8,a1=a0+Math.PI/8,p=pt(a0),q=pt(a1),m=tbox(Math.hypot(q[0]-p[0],q[1]-p[1])+.02,.08,.08,tim,(p[0]+q[0])/2,yy,(p[1]+q[1])/2,b);m.rotation.y=-Math.atan2(q[1]-p[1],q[0]-p[0]);}
+  const sl=new THREE.Mesh(new THREE.CylinderGeometry(rb+.12,rb+.12,.16,14,1,false,-Math.PI/2,Math.PI),texMat('stone',0xcac4b4,.6,.2));sl.position.set(cx,y0-.08,zf);sl.castShadow=true;b.add(sl);
+  const cn=new THREE.Mesh(new THREE.ConeGeometry(rb+.28,.75,14,1,true,-Math.PI/2,Math.PI),new THREE.MeshLambertMaterial({color:0x4a8a78,side:THREE.DoubleSide}));cn.position.set(cx,y0+hgt+.38,zf);cn.castShadow=true;b.add(cn);
+  const gc=[0xd94848,0xe8c84a,0x4a78d0,0xc86ae8,0x58a858,0xff8a3a,0xf4f0e4];for(const yy of[y0+.62,y0+1.3]){tbox(2.3,.05,.9,tim,cx,yy,zf+.45,b);
+    for(let k=0;k<7;k++){const a=(k-3)*.34,r=.55+((k*7+i)%3)*.12,hh=.2+((k*5+i)%4)*.08;tbox(.2+(k%2)*.08,hh,.2,k%3===0?lampMat:LM(gc[(k+i)%7]),cx+r*Math.sin(a),yy+.03+hh/2,zf+.1+r*Math.cos(a)*.9,b);}}}
+function chimStack(b,x,z,topY,baseY,tilt,i){const cl=topY-baseY,cg=new THREE.CylinderGeometry(.5,.62,cl,4);cg.rotateY(Math.PI/4);const ch=new THREE.Mesh(cg,texMat('stone',0xa8a498,.7,cl/1.6));
+  ch.position.set(x,baseY+cl/2,z);ch.rotation.z=tilt;ch.rotation.x=tilt*.5;ch.castShadow=true;b.add(ch);const cap=tbox(1.2,.2,1.2,texMat('stone',0x8a867c,.5,.3),x+tilt*cl*-.5,topY+.1,z,b);cap.rotation.z=tilt;
+  for(const q of[-1,1]){const p=new THREE.Mesh(new THREE.CylinderGeometry(.11,.14,.5,8),LM(0x8a4a32));p.position.set(x+q*.25-tilt*cl*.5,topY+.45,z);p.rotation.z=tilt;b.add(p);}}
 function gableTri(b,hd,rise,x,z,ry,col,tim,win){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute([-hd,0,0,hd,0,0,0,rise,0],3));g.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,1,0,.5,1],2));g.setIndex([0,1,2]);g.computeVertexNormals();
   const m=texMat('plaster',col,hd*2/4,rise/4);m.side=THREE.DoubleSide;const t=new THREE.Mesh(g,m);t.position.set(x,win.y,z);t.rotation.y=ry;t.castShadow=true;b.add(t);
   const sl=Math.hypot(hd,rise),an=Math.atan2(rise,hd);for(const sx of[-1,1]){const r=tbox(.16,sl,.16,tim,0,0,0,t);r.position.set(sx*hd/2,rise/2,.07);r.rotation.z=sx*(Math.PI/2-an);}
@@ -1066,26 +1082,29 @@ function frameFace(b,W,H,y0,tim,face,sgn,zpos,ry){const g=new THREE.Group();g.po
   return g;}
 const liftC=(c,k)=>{const r=Math.min(255,(c>>16&255)*k),g=Math.min(255,(c>>8&255)*k),b=Math.min(255,(c&255)*k);return(r<<16)|(g<<8)|b;};
 const mixC=(a,b,t)=>{const m=(s)=>Math.round((a>>s&255)*(1-t)+(b>>s&255)*t);return(m(16)<<16)|(m(8)<<8)|m(0);};
-function houseBody(b,w,d,i,id,sd){const H1=HOUSE_H1,H2=id?2.8:2.4,Ht=H1+H2,W2=w+.5,D2=d+.8,hdE=D2/2,rise=hdE*1.12,over=.85,L=W2+1.3;
+function houseBody(B,w,d,i,id,sd){const g=new THREE.Group();B.add(g);const r=houseBody0(g,w,d,i,id,sd);g.rotation.z=(i%2?1:-1)*.03;g.rotation.x=((i*7)%3-1)*.012;return r;}
+function houseBody0(b,w,d,i,id,sd){const H1=HOUSE_H1,H2=id?2.8:2.4,Ht=H1+H2,W2=w+.5,D2=d+.8,hdE=D2/2,rise=hdE*1.12,over=.85,L=W2+1.3;
   const wc=mixC(sd?sd.wall:[0xb8b2a4,0x9c8f7e,0xd2c6ae,0xa89a88,0x8c8478][i%5],0xf4ecd8,.62),rc=liftC(sd?sd.roof:[0x3a3f5c,0x4a3a34,0x30424a,0x4a3050,0x2f3a30][i%5],2.1),
     tim=texMat('wood',0x4a3626,1,1),stc=[0xd8d4c8,0xcac4b4,0xe0dacc,0xc2bcac][i%4];
   wallBlock(w+.3,.7,d+.3,'stone',0x8e8a80,0,.35,0,b,2.4,.03,i+1);
-  wallBlock(w,H1,d,'stone',stc,0,H1/2,0,b,2.6,.035,i+2);
+  wallBlock(w,H1,d,'stone',mixC(stc,0x9fb08a,i%3===0?.35:.12),0,H1/2,0,b,2.6,.06,i+2);
+  for(let k=0;k<4;k++)tbox(.8+(k%2)*.7,.3,.04,LM(0x6a8a4a),(k-1.5)*w*.22,.55+(k%3)*.18,d/2+.03,b);
   for(const sx of[-1,1])for(const sz of[-1,1])for(let k=0;k<6;k++){const a=k%2?.55:.38;tbox(a,.5,a,texMat('stone',0xc4c0b4,.5,.5),sx*(w/2),.9+k*.5,sz*(d/2),b);}
-  wallBlock(W2,H2,D2,'plaster',wc,0,H1+H2/2,0,b,4,.05,i+3);
+  wallBlock(W2,H2,D2,'plaster',wc,0,H1+H2/2,0,b,4,.1,i+3);
   const fr=H2;frameFace(b,W2,fr,H1,tim,'z',1,D2/2+.07,0);frameFace(b,W2,fr,H1,tim,'z',-1,D2/2+.07,Math.PI);frameFace(b,D2,fr,H1,tim,'x',1,W2/2+.07,Math.PI/2);frameFace(b,D2,fr,H1,tim,'x',-1,W2/2+.07,-Math.PI/2);
   for(let k=-4;k<=4;k++)if(k)tbox(.3,.4,.55,tim,k*W2/9,H1-.15,d/2+.2,b).rotation.x=.4;
   tbox(W2+.1,.3,.2,tim,0,H1-.05,D2/2+.05,b);
   for(const sx of[-1,1]){const wx=sx*(w/2-1.4),wy=H1+H2*.52;tbox(1.3,1.3,.12,tim,wx,wy,D2/2+.12,b);tbox(1.0,1.05,.14,winMat,wx,wy,D2/2+.15,b);tbox(.06,1.05,.16,tim,wx,wy,D2/2+.17,b);tbox(1.0,.06,.16,tim,wx,wy,D2/2+.17,b);
     for(const q of[-1,1]){tbox(.4,1.1,.07,texMat('wood',0x3a5a48,.5,1),wx+q*.78,wy,D2/2+.15,b);}tbox(1.5,.16,.4,tim,wx,wy-.72,D2/2+.28,b);}
-  addSwRoof(b,L,hdE,rise,over,rc,0,Ht,0,0,true);
+  const thatch=!id&&i%2===1;addSwRoof(b,L,hdE,rise,thatch?over+.15:over,thatch?0xe4c47a:rc,0,Ht,0,0,true,.4,thatch?'thatch':'slate');
   for(const sx of[-1,1])gableTri(b,hdE,rise,sx*W2/2,0,sx*Math.PI/2,wc,tim,{y:Ht});
   const rr=tbox(L,.16,.3,tim,0,Ht+rise-.12,0,b);
-  if(id||i%2===0){const hc=1.9,rc2=hc*1.1,zf=D2/2+.75,zb=0,Lc=zf-zb,cz=(zf+zb)/2,r=addSwRoof(b,Lc,hc,rc2,.6,rc,0,Ht,cz,-Math.PI/2,true);
+  if(id||i%2===0){const hc=1.9,rc2=hc*1.1,zf=D2/2+.75,zb=0,Lc=zf-zb,cz=(zf+zb)/2,r=addSwRoof(b,Lc,hc,rc2,.6,thatch?0xe4c47a:rc,0,Ht,cz,-Math.PI/2,true,.12,thatch?'thatch':'slate');
     const gt=gableTri(b,hc,rc2,0,D2/2+.02,0,wc,tim,{y:Ht});tbox(1.0,1.15,.14,winMat,0,Ht+1.05,D2/2+.1,b);tbox(1.3,1.45,.1,tim,0,Ht+1.05,D2/2+.07,b);tbox(.06,1.15,.16,tim,0,Ht+1.05,D2/2+.12,b);tbox(1.0,.06,.16,tim,0,Ht+1.05,D2/2+.12,b);}
   const cxm=id==='bakery'?w/2-1.3:(i%2?-1:1)*(w/2-1.3),surf=Ht+rise*(1-1.2/hdE),ct=surf+1.3,cl=ct-(Ht+.4),cm=texMat('stone',0xa09c90,.7,cl/1.6);
-  const cg=new THREE.CylinderGeometry(.5,.62,cl,4);cg.rotateY(Math.PI/4);const ch=new THREE.Mesh(cg,cm);ch.position.set(cxm,Ht+.4+cl/2,-1.2);ch.castShadow=true;b.add(ch);
-  tbox(1.2,.2,1.2,texMat('stone',0x8a867c,.5,.3),cxm,ct+.1,-1.2,b);for(const q of[-1,1]){const p=new THREE.Mesh(new THREE.CylinderGeometry(.11,.14,.5,8),LM(0x8a4a32));p.position.set(cxm+q*.25,ct+.45,-1.2);b.add(p);}
+  chimStack(b,cxm,-1.2,ct,Ht+.4,(i%2?-1:1)*.05,i);
+  if(id!=='bakery'){chimStack(b,-cxm*.7,-d*.2,Ht+rise*(1-d*.2/hdE)+1.7,Ht+.4,(i%2?1:-1)*.07,i+1);chimStack(b,-cxm*.7+1.1,-d*.2-.4,Ht+rise*(1-(d*.2+.4)/hdE)+1.0,Ht+.4,.1,i+2);}
+  if(id)for(const sx of[-1,1])bowWindow(b,sx*(w/2-1.7),d/2,i);
   for(const sx of[-1,1]){tbox(.36,.5,.36,lampMat,sx*1.7,2.7,d/2+.3,b);tbox(.5,.08,.5,LM(0x24242a),sx*1.7,2.98,d/2+.3,b);tbox(.5,.08,.5,LM(0x24242a),sx*1.7,2.42,d/2+.3,b);tbox(.8,.06,.06,LM(0x24242a),sx*1.3,2.7,d/2+.12,b);}
   return{Ht,ct};}
 function archShape(wd,ht){const s=new THREE.Shape();s.moveTo(-wd/2,0);s.lineTo(wd/2,0);s.lineTo(wd/2,ht);s.absarc(0,ht,wd/2,0,Math.PI,false);s.lineTo(-wd/2,0);return s;}

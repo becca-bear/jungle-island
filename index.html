@@ -909,23 +909,23 @@ function walkAnim(g,speed,dt,swim){const u=g.userData;u.ph+=speed*dt*1.9;const s
 const TOWN=9,TWN=new Uint8Array(NN);
 let town=null,shops=[],villagers=[],finds=[],shopOpen=null,nearShop=null;
 const SHOPS={
-  post:{name:'Trading Post',wall:0xd9c9a3,roof:0x9a4a32,blurb:'Gear for the trail.',items:[
+  post:{name:'Courier Post',wall:0xb4ad9c,roof:0x3a3f5c,blurb:'Gear for the trail.',items:[
     {id:'lantern',n:'Oil lantern',d:'Your torch shines brighter and further',p:90},
     {id:'spyglass',n:'Spyglass',d:'Hold Z to zoom in on far-off things',p:60},
     {id:'satchel',n:'Trader’s satchel',d:'Everything you find sells for 25% more',p:110},
     {id:'treat',inv:'treat',qty:3,n:'Animal treats ×3',d:'Feed to any animal, on land or in the sea, to befriend it',p:18}]},
-  bakery:{name:'Bakery',wall:0xf0dfc0,roof:0xc47a3a,blurb:'Fresh out of the oven.',items:[
+  bakery:{name:'Cauldron Cakes',wall:0xd2c0a0,roof:0x6a3a2a,blurb:'Fresh out of the oven.',items:[
     {id:'bun',n:'Coconut bun',d:'Move faster for 2 minutes',p:15,use:()=>{BUFF.speed=120;}},
     {id:'croissant',n:'Butter croissant',d:'Light and flaky: move faster for a minute',p:12,use:()=>{BUFF.speed=Math.max(BUFF.speed,60);}},
     {id:'cinroll',n:'Cinnamon roll',d:'Warm and sticky: move faster for 2.5 minutes',p:18,use:()=>{BUFF.speed=Math.max(BUFF.speed,150);}},
     {id:'pie',n:'Mango pie',d:'Jump higher for 3 minutes',p:25,use:()=>{BUFF.jump=180;}},
     {id:'cake',n:'Berry cake slice',d:'Faster and lighter for 2 minutes',p:30,use:()=>{BUFF.speed=Math.max(BUFF.speed,120);BUFF.jump=Math.max(BUFF.jump,120);}}]},
-  tailor:{name:'Needle & Thread',wall:0xe6d0d8,roof:0x7a4a8a,blurb:'Hats for every kind of weather.',items:[
+  tailor:{name:'Cloak & Cinder',wall:0xb0a0a8,roof:0x4a3050,blurb:'Hats for every kind of weather.',items:[
     {id:'hat3',n:'Straw hat',d:'Wide brim, red ribbon',p:40,hat:3},
     {id:'hat4',n:'Flower crown',d:'Picked this morning',p:55,hat:4},
     {id:'hat5',n:'Explorer hat',d:'For serious expeditions',p:70,hat:5}]},
-  seeds:{name:'Seed & Feed',wall:0xd8e0b8,roof:0x6a8a3a,blurb:'Seeds for every climate. Hoe, plant, water, harvest.',items:[]},
-  outfit:{name:'Outfitter',wall:0xcfd8c8,roof:0x3f6a4a,blurb:'Boots, flippers and rope.',items:[
+  seeds:{name:'Greenhouse & Grow',wall:0xa8b0a0,roof:0x2f4a38,blurb:'Seeds for every climate. Hoe, plant, water, harvest.',items:[]},
+  outfit:{name:'Boots & Broomsticks',wall:0x9c9a90,roof:0x30424a,blurb:'Boots, flippers and rope.',items:[
     {id:'boots',n:'Trail boots',d:'Walk and run 30% faster',p:120},
     {id:'flippers',n:'Flippers',d:'Swim twice as fast',p:80},
     {id:'rope',n:'Climbing rope',d:'Get up much steeper slopes',p:100},
@@ -943,8 +943,8 @@ const winMat=new THREE.MeshLambertMaterial({color:0x7fb4cc,emissive:0x000000}),l
 const townLight=new THREE.PointLight(0xffb060,0,80,1.4);scene.add(townLight);
 function tbox(w,h,d,mat,x,y,z,parent){const m=box(w,h,d,mat,x,y,z,parent);m.receiveShadow=true;return m;}
 function signTex(text){const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');
-  x.fillStyle='#e8d5a8';x.fillRect(0,0,256,64);x.strokeStyle='#3a2a18';x.lineWidth=6;x.strokeRect(3,3,250,58);
-  x.fillStyle='#2a1c10';x.font='bold 30px Georgia,serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,128,34,236);return new THREE.CanvasTexture(c);}
+  x.fillStyle='#3a2a1c';x.fillRect(0,0,256,64);x.strokeStyle='#c89a3c';x.lineWidth=5;x.strokeRect(4,4,248,56);
+  x.fillStyle='#f0d890';x.font='bold 30px Georgia,serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,128,34,236);return new THREE.CanvasTexture(c);}
 function addTrunk(x,z,r){const k=Math.floor(x/8)+','+Math.floor(z/8);let a=trunkGrid.get(k);if(!a)trunkGrid.set(k,a=[]);a.push(x,z,r);}
 function placeTown(){TWN.fill(0);town=null;let best=null;
   for(let t=0;t<1500;t++){const x=(rng()-.5)*1100,z=(rng()-.5)*1100,c=cellAt(x,z),h=H[c];
@@ -993,7 +993,7 @@ function adopt(breed){const B=BREEDS[breed],c={id:Date.now()+Math.random(),breed
 function rehome(i){const c=(SAVE.comps||[])[i];if(!c)return;SAVE.comps.splice(i,1);const a=animals.find(a=>a.cid===c.id);
   if(a){a.pet=false;pets=pets.filter(p=>p!==a);animals=animals.filter(p=>p!==a);world.remove(a.g);if(a.hm)world.remove(a.hm);}
   persist();toast(c.name+' goes to a loving new home');}
-SHOPS.pets={name:'Paws & Whiskers',wall:0xf2d6c4,roof:0x3a7a8a,blurb:'Adopt a dog or cat. They follow you everywhere, and you can keep up to '+MAXC+' alongside your wild friends.',
+SHOPS.pets={name:'Familiars & Co.',wall:0xc4b8a4,roof:0x3a4a6a,blurb:'Adopt a dog or cat. They follow you everywhere, and you can keep up to '+MAXC+' alongside your wild friends.',
   items:Object.keys(BREEDS).map(k=>({id:'pet_'+k,n:BREEDS[k].n+' ('+BREEDS[k].k+')',d:BREEDS[k].d,p:BREEDS[k].p,use:()=>adopt(k),chk:()=>{if((SAVE.comps||[]).length>=MAXC){toast('You already have '+MAXC+' companions. Rehome one first');return false;}return true;}}))};
 const PEN=[];
 function petPen(b,w,d,T,ca,sa,bx,bz){const cx=w/2+4.7,cz=d/2+3.7,pw=7,pd=6,wood=LM(0x8a5a32);PEN.length=0;
@@ -1010,18 +1010,30 @@ function updatePen(dt){if(!PEN.length)return;const P=PEN[0];if(Math.hypot(P.wx-p
       const v=Math.min(d,sp*dt);p.x+=Math.sin(p.head)*v;p.z+=Math.cos(p.head)*v;}}
     animLegs(p.a,sp,dt,false);g.position.set(p.x,.08,p.z);g.rotation.y=p.head;const u=g.userData;if(u.tail)u.tail.rotation.y=Math.sin(clock*(sp?6:3)+p.x*3)*.45;}}
 
+function hogsFx(b,w,h,d,rr,i){const tim=LM(0x2e2218),st=LM(0x7c786f),iron=LM(0x24242a),fz=d/2+.07;
+  tbox(w+.3,1.0,d+.3,st,0,.2,0,b);
+  for(const sx of[-1,-.5,0,.5,1])if(Math.abs(sx)!==0||i%2===0)tbox(.2,h*.85,.12,tim,sx*(w/2-.1),h*.45+.5,fz,b);
+  tbox(w,.2,.12,tim,0,h*.62,fz,b);tbox(w,.2,.12,tim,0,h-.1,fz,b);
+  for(const sx of[-1,1]){const br=tbox(.16,Math.hypot(w/4,h*.3),.1,tim,sx*w*.32,h*.8,fz,b);br.rotation.z=sx*Math.atan2(w/4,h*.3);}
+  for(const sx of[-1,1])tbox(.14,.14,d+.2,tim,sx*(w/2+.02),h-.1,0,b);
+  for(const sx of[-1,1]){tbox(.36,.5,.36,lampMat,sx*1.6,2.7,d/2+.3,b);tbox(.5,.08,.5,iron,sx*1.6,2.98,d/2+.3,b);tbox(.5,.08,.5,iron,sx*1.6,2.42,d/2+.3,b);tbox(.8,.06,.06,iron,sx*1.2,2.7,d/2+.12,b);}
+  const cx=(i%2?-1:1)*(w/2-1.3),ch=tbox(.9,3.4,.9,st,cx,h+2.6,-d/4-.3,b);tbox(1.15,.2,1.15,LM(0x5a564e),cx,h+4.4,-d/4-.3,b);
+  for(let k=0;k<2;k++)tbox(.24,.5,.24,LM(0x4a463e),cx+(k?.26:-.26),h+4.75,-d/4-.3,b);
+  const dz=d/2-1.1;
+  tbox(1.5,1.3,1.1,LM(0xb8b2a4),0,h+2.0,dz,b);tbox(1.2,1.0,.12,winMat,0,h+2.05,dz+.58,b);const dr=tbox(1.9,.14,1.5,LM(0x2a2a3a),0,h+2.78,dz,b);dr.rotation.z=0;
+  const cap=tbox(1.7,.14,1.5,LM(0x2a2a3a),-.5,h+2.9,dz,b);cap.rotation.z=.5;const cp2=tbox(1.7,.14,1.5,LM(0x2a2a3a),.5,h+2.9,dz,b);cp2.rotation.z=-.5;}
 function buildTown(){PEN.length=0;townDoors=[];townSites=null;shops=[];villagers=[];NPCS=[];home=null;bakSmk.length=0;roofSnow.length=0;townFlowers.length=0;if(!town){townLight.intensity=0;return;}
   const T=town,g=new THREE.Group();g.position.set(T.x,T.h,T.z);world.add(g);townLight.position.set(T.x,T.h+7,T.z);dressTown(T,g);
   const defs=['post',0,'bakery','furn','tailor','museum','outfit','pets','seeds','home'],n=defs.length,wood=LM(0x6a4a2a);
-  const walls=[0xe8dcc0,0xd9c7a6,0xe6d3c8,0xcfd6c4,0xe0cfa8],roofs=[0x9a4a32,0x7a5a3a,0x5a6a7a,0x8a3a3a,0x4a6a4a];
+  const walls=[0xb8b2a4,0x9c8f7e,0xd2c6ae,0xa89a88,0x8c8478],roofs=[0x3a3f5c,0x4a3a34,0x30424a,0x4a3050,0x2f3a30];
   for(let i=0;i<n;i++){const id=defs[i],sd=id?SHOPS[id]:null,a=i/n*6.283+T.rot,rad=id?28:32+rng()*4,bx=Math.cos(a)*rad,bz=Math.sin(a)*rad;
     const b=new THREE.Group(),ry=Math.atan2(-bx,-bz),sa=Math.sin(ry),ca=Math.cos(ry);b.position.set(bx,0,bz);b.rotation.y=ry;g.add(b);
     if(id==='home'){const o=buildCottage(b);home={x:T.x+bx+sa*(o.d/2+2.4),z:T.z+bz+ca*(o.d/2+2.4)};for(const ox of[-o.w/3,0,o.w/3])addTrunk(T.x+bx+ox*ca,T.z+bz-ox*sa,o.d/2+.3);rng();rng();rng();continue;}
     if(id==='furn'||id==='museum'){rng();rng();rng();}
     const w=id?9:6.5+rng()*1.5,d=id?7:6,h=id?4.4:3.6+rng()*.8;
     tbox(w,h,d,LM(sd?sd.wall:walls[i%5]),0,h/2-.3,0,b).scale.y=1.15;
-    const rr=(d+1.2)/1.732;let rg=Cyl(rr,rr,w+1,3);rg.rotateY(Math.PI/2);rg.rotateZ(Math.PI/2);rg.scale(1,.55,1);rg=rg.toNonIndexed();rg.computeVertexNormals();
-    const roof=new THREE.Mesh(rg,LM(sd?sd.roof:roofs[i%5]));roof.position.y=h+rr*.275;roof.castShadow=true;b.add(roof);snowCap(roof,b);
+    const rr=(d+1.2)/1.732;let rg=Cyl(rr,rr,w+1,3);rg.rotateY(Math.PI/2);rg.rotateZ(Math.PI/2);rg.scale(1,.85,1);rg=rg.toNonIndexed();rg.computeVertexNormals();
+    const roof=new THREE.Mesh(rg,LM(sd?sd.roof:roofs[i%5]));roof.position.y=h+rr*.425;roof.castShadow=true;b.add(roof);snowCap(roof,b);hogsFx(b,w,h,d,rr,i);
     tbox(1.3,2.3,.16,LM(0x5a3a22),0,1.15,d/2+.04,b);townDoors.push({x:T.x+bx+sa*(d/2+1.3),z:T.z+bz+ca*(d/2+1.3)});
     for(const sx of[-1,1]){tbox(1.2,1.2,.12,winMat,sx*(w/2-1.7),h*.56,d/2+.04,b);tbox(1.4,.2,.34,wood,sx*(w/2-1.7),h*.56-.74,d/2+.14,b);
       tbox(1.2,.16,.2,LM([0xe84a6a,0xf2c84a,0xc86ae8][i%3]),sx*(w/2-1.7),h*.56-.56,d/2+.16,b);}
@@ -1510,7 +1522,7 @@ $('talkin').addEventListener('click',e=>{const a=e.target.dataset.a,n=talkNPC;if
   if(a==='accept'){const Q=QUESTS.find(q=>q.giver===n.id&&qAvail(q));if(Q)qAccept(Q);closeTalk();}
   if(a==='claim'){const Q=QUESTS.find(q=>q.giver===n.id&&qs(q.id).s===1&&qCur(q)>=qMax(q));if(Q)qFinish(Q);if(QUESTS.find(q=>q.giver===n.id&&qAvail(q)))renderTalk();else closeTalk();}});
 function renderJournal(){const row=(Q,t)=>'<div class="item"><div><b>'+Q.n+'</b><span>'+t+'</span></div></div>';
-  const act=QUESTS.filter(Q=>qs(Q.id).s===1),done=QUESTS.filter(Q=>qs(Q.id).s===2),GV={mayor:'the mayor in town',seedkeeper:'the keeper of Seed & Feed',stablehand:'the stable hand',queen:'the queen under the sea'};
+  const act=QUESTS.filter(Q=>qs(Q.id).s===1),done=QUESTS.filter(Q=>qs(Q.id).s===2),GV={mayor:'the mayor in town',seedkeeper:'the keeper of Greenhouse & Grow',stablehand:'the stable hand',queen:'the queen under the sea'};
   const open=QUESTS.filter(qAvail);
   $('journalin').innerHTML='<h1>Quest journal</h1>'+(act.length?'<h2>Active</h2>'+act.map(Q=>row(Q,Q.goal+' · '+qCur(Q)+'/'+qMax(Q)+' · given by '+GV[Q.giver])).join(''):'')+
     (open.length?'<h2>Someone has work for you</h2>'+open.map(Q=>row({n:'Speak to '+GV[Q.giver]},'Look for the yellow marker over their head')).join(''):'')+
@@ -1540,11 +1552,11 @@ function restorePets(){const P=SAVE.pets;if(!P||P.key!==worldKey(WORLD))return;
   if(P.sea){const s=seaLife.find(s=>s.kind===P.sea);if(s)setSeaPet(s,true);}}
 function give(){if(!started||uiBusy())return;const A=nearAnimal,Sx=nearSea;
   if(A){if(A.pet){A.stay=!A.stay;A.lead=null;beacon.visible=false;return toast('Your '+animalName(A)+(A.stay?' will wait here':' is following you again'));}
-    const f=foodFor(A.sp);if(!f)return toast(A.sp.meat?'It only wants animal treats. The Trading Post sells them':'You need food for it: a crop, some fruit, or animal treats');
+    const f=foodFor(A.sp);if(!f)return toast(A.sp.meat?'It only wants animal treats. The Courier Post sells them':'You need food for it: a crop, some fruit, or animal treats');
     addInv(f,-1);A.hearts=(A.hearts||0)+1;A.flee=0;A.sleepT=0;A.idle=4;persist();
     if(A.hearts>=3)setPet(A);else toast('The '+animalName(A)+' eats the '+itemInfo(f).n.toLowerCase()+'  '+hearts(A.hearts));}
   else if(Sx){if(Sx===seaPet)return toast('Your '+(Sx.kind==='turtle'?'sea turtle':Sx.kind)+' nuzzles your hand');
-    if(!(SAVE.inv.treat>0))return toast('Sea creatures want animal treats. The Trading Post sells them');
+    if(!(SAVE.inv.treat>0))return toast('Sea creatures want animal treats. The Courier Post sells them');
     addInv('treat',-1);Sx.hearts=(Sx.hearts||0)+1;persist();if(Sx.hearts>=3)setSeaPet(Sx);else toast('The '+(Sx.kind==='turtle'?'sea turtle':Sx.kind)+' takes the treat  '+hearts(Sx.hearts));}}
 function findNear(){nearAnimal=null;nearSea=null;if(!started||uiBusy())return;
   if(!inSea&&!mount){let bd=3.6;for(const a of animals){if(!a.g.visible)continue;const d=Math.hypot(a.x-player.x,a.z-player.z);if(d<bd){bd=d;nearAnimal=a;}}}
@@ -1596,7 +1608,7 @@ QUESTS.push({id:'collect',giver:'mayor',after:'welcome',n:'The collector\u2019s 
 QUESTS.push({id:'salvage',giver:'mayor',after:'welcome',n:'Salvage rights',max:3,cur:()=>SAVE.stats.wrecks||0,goal:'Salvage the chests from 3 shipwrecks',
   offer:'This coast has eaten more ships than the harbour ever sent out. Their chests are still down there on the seabed. Dive down and swim up to three of them. A wreck chart from the Salvage Barge would show you where.',done:'Old gold and older stories. Well done.',reward:{coins:150}});
 QUESTS.push({id:'abyss',giver:'mayor',after:'salvage',n:'Into the abyss',max:1,cur:()=>SAVE.stats.abyss?1:0,goal:'Dive 30 m down into a deep trench wearing a deep-sea suit',
-  offer:'Far out there are trenches where the sea floor simply falls away. No one goes below the pressure line without a deep-sea suit. Get one from the Outfitter or the Salvage Barge, and tell me what is down there.',done:'Anglerfish and black pearls, you say. I will never sleep again.',reward:{coins:320}});
+  offer:'Far out there are trenches where the sea floor simply falls away. No one goes below the pressure line without a deep-sea suit. Get one from Boots & Broomsticks or the Salvage Barge, and tell me what is down there.',done:'Anglerfish and black pearls, you say. I will never sleep again.',reward:{coins:320}});
 QUESTS.push({id:'friend',giver:'stablehand',after:'ride',n:'A friend in the wild',max:1,cur:()=>SAVE.stats.tamed>0?1:0,goal:'Befriend a wild animal by feeding it three times',
   offer:'Horses aren’t the only ones who’ll take to you. Carry food and wild things stop running. Feed one three times with G and it’s yours for life. Grazers like crops and fruit; hunters and sea creatures want treats.',
   done:'Knew you had the touch. A friend like that will sniff out things you’d walk right past.',reward:{coins:70}});
@@ -1924,7 +1936,7 @@ const FURN={
  dresser:{n:'Dresser',p:60,rad:.9,b(){const g=new THREE.Group(),w=lam(0x8a5a32),d=lam(0xa87a48);box(1.6,.9,.55,w,0,.45,0,g);for(const sx of[-1,1])for(const y of[.28,.62]){box(.7,.28,.02,d,sx*.4,y,.285,g);box(.1,.05,.04,lam(0xd8b050),sx*.4,y,.31,g);}return g;}},
  clock:{n:'Grandfather clock',p:75,rad:.45,b(){const g=new THREE.Group(),w=lam(0x6a4224);box(.6,2.1,.4,w,0,1.05,0,g);box(.7,.18,.5,w,0,2.15,0,g);box(.42,.42,.02,lam(0xf2ecd8),0,1.65,.21,g);box(.03,.16,.02,lam(0x2a2a2a),0,1.7,.225,g);box(.12,.03,.02,lam(0x2a2a2a),.04,1.65,.225,g);box(.38,.7,.02,lam(0x3a2412),0,.8,.21,g);box(.1,.4,.02,lam(0xd8b050),0,.8,.225,g);return g;}}};
 Object.keys(FURN).forEach(k=>{FURN[k].id=k;});
-SHOPS.furn={name:'Home & Hearth',wall:0xe8d6c0,roof:0x5a8a6a,blurb:'Everything for a cosy home. Place it from your home with B.',items:Object.keys(FURN).map(k=>({id:'buy_f_'+k,inv:'f_'+k,qty:1,n:FURN[k].n,d:'Furniture for your home'+(FURN[k].flat?' (a rug, walk right over it)':''),p:FURN[k].p}))};
+SHOPS.furn={name:'Hearth & Hollow',wall:0xb8a890,roof:0x4a3a34,blurb:'Everything for a cosy home. Place it from your home with B.',items:Object.keys(FURN).map(k=>({id:'buy_f_'+k,inv:'f_'+k,qty:1,n:FURN[k].n,d:'Furniture for your home'+(FURN[k].flat?' (a rug, walk right over it)':''),p:FURN[k].p}))};
 const OUTFITS=[{id:'out_dress',n:'Sunday dress',d:'A soft rose dress for market days',p:85,out:{top:7,bottom:3,botc:7}},{id:'out_overalls',n:'Overalls',d:'Blue overalls over a cream top',p:70,out:{top:8,bottom:1,botc:5}},{id:'out_sailor',n:'Sailor set',d:'White top, blue shorts',p:75,out:{top:8,bottom:2,botc:5}},
   {id:'out_festival',n:'Festival outfit',d:'Red top and a sunny yellow skirt',p:95,out:{top:0,bottom:0,botc:2}},{id:'out_winter',n:'Winter set',d:'Warm blue top, dark trousers',p:110,out:{top:5,bottom:1,botc:9}}];
 const ACCS=[{id:'acc1',n:'Woollen scarf',d:'Bright red scarf',p:35,acc:1},{id:'acc2',n:'Baker’s apron',d:'Clean white apron',p:40,acc:2},{id:'acc3',n:'Traveller’s cape',d:'A deep red cape',p:65,acc:3}];
@@ -1992,7 +2004,7 @@ function renderWard(){if(!SAVE.everyday)SAVE.everyday={top:CH.top,bottom:CH.bott
   const ob=(label,on,data)=>'<button class="wopt'+(on?' sel':'')+'" '+data+'>'+label+'</button>',E=SAVE.everyday;
   const outs=[{id:'',n:'Everyday',out:Object.assign({},E)}].concat(OUTFITS.filter(o=>SAVE.owned[o.id])),same=o=>CH.top===o.out.top&&CH.bottom===o.out.bottom&&CH.botc===o.out.botc;
   const hats=[0,1,2,3,4,5,6,7,8].filter(h=>h<3||SAVE.owned['hat'+h]),accs=[{n:'None',acc:0}].concat(ACCS.filter(a=>SAVE.owned[a.id]));
-  $('wardin').innerHTML='<h1>Your wardrobe</h1><p class="sub">Change into anything you have bought. Visit the Needle &amp; Thread in town for more.</p>'+
+  $('wardin').innerHTML='<h1>Your wardrobe</h1><p class="sub">Change into anything you have bought. Visit Cloak &amp; Cinder in town for more.</p>'+
    '<h2>Outfits</h2><div class="wrow">'+outs.map(o=>ob(o.n,same(o),'data-out="'+o.id+'"')).join('')+'</div>'+
    '<h2>Hats</h2><div class="wrow">'+hats.map(h=>ob(HATS[h],CH.hat===h,'data-hat="'+h+'"')).join('')+'</div>'+
    '<h2>Accessories</h2><div class="wrow">'+accs.map(a=>ob(a.n,(CH.acc||0)===a.acc,'data-acc="'+a.acc+'"')).join('')+'</div>'+
@@ -2321,7 +2333,7 @@ for(const it of SHOPS.bakery.items.concat(BAKE_SP)){if(it&&it.use){const u=it.us
 SAVE.museum=SAVE.museum||{};SAVE.caught=SAVE.caught||{};SAVE.msIdx=SAVE.msIdx||0;
 SAVE.stats.fish=SAVE.stats.fish||0;SAVE.stats.bugs=SAVE.stats.bugs||0;
 SHOPS.post.items.push({id:'rod',n:'Fishing rod',d:'Cast into rivers and the sea. Fish sell well, and the museum wants them',p:60},{id:'net',n:'Bug net',d:'Catch butterflies, beetles and fireflies for sale or the museum',p:45});
-SHOPS.museum={name:'Museum',wall:0xe9e5dc,roof:0x44587a,blurb:'',items:[]};
+SHOPS.museum={name:'Museum',wall:0xc4beb0,roof:0x3a4468,blurb:'',items:[]};
 let townDoors=[],townSites=null;
 const FSH={st:0,t:0,w:null},NET={t:0};let rodP=null,netP=null,rodTip=null,bobM=null,lineM=null,lastTools=-1;
 (function mkProps(){
@@ -2574,12 +2586,12 @@ buildMuseum();
 function musAfterLoad(){}
 
 /* the cottage and the town's cobbles */
-function buildCottage(b){const w=8.4,d=6.6,h=3.9,stone=LM(0x9a958c),wood=LM(0x6a4a2a),green=LM(0x3f7a5a),cream=LM(0xf1e4c8);
+function buildCottage(b){const w=8.4,d=6.6,h=3.9,stone=LM(0x8a857c),wood=LM(0x3a2a1c),green=LM(0x2f4a3a),cream=LM(0xc8bda4);
   tbox(w+.3,.9,d+.3,stone,0,0,0,b);tbox(w,h,d,cream,0,h/2-.3,0,b).scale.y=1.05;
   for(const sx of[-1,1])for(const sz of[-1,1])tbox(.28,h,.28,wood,sx*(w/2),h/2-.3,sz*(d/2),b);tbox(w+.1,.22,d+.1,wood,0,h-.2,0,b);
   for(const sx of[-1,0,1])tbox(.14,h*.55,.1,wood,sx*(w/3),h*.55,d/2+.02,b);
   const rr=(d+1.8)/1.732;let rg=Cyl(rr,rr,w+1.6,3);rg.rotateY(Math.PI/2);rg.rotateZ(Math.PI/2);rg.scale(1,.8,1);rg=rg.toNonIndexed();rg.computeVertexNormals();
-  const roof=new THREE.Mesh(rg,LM(0x4f7d6a));roof.position.y=h+rr*.4-.1;roof.castShadow=true;b.add(roof);snowCap(roof,b);
+  const roof=new THREE.Mesh(rg,LM(0x3a4468));roof.position.y=h+rr*.4-.1;roof.castShadow=true;b.add(roof);snowCap(roof,b);
   tbox(.95,3.2,.95,LM(0x8a7d72),w/2-1.4,h+1.3,-1,b);tbox(1.15,.2,1.15,LM(0x6a625a),w/2-1.4,h+2.95,-1,b);
   tbox(1.7,2.75,.1,LM(0xefe4cc),0,1.1,d/2+.02,b);tbox(1.35,2.4,.16,green,0,1.0,d/2+.08,b);const kn=new THREE.Mesh(new THREE.SphereGeometry(.08,6,5),LM(0xd8b050));kn.position.set(.45,1,d/2+.2);b.add(kn);
   tbox(2.4,.25,1,stone,0,.0,d/2+.6,b);for(const sx of[-1,1])tbox(.28,.42,.28,lampMat,sx*1.4,2.45,d/2+.2,b);

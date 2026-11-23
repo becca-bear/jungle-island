@@ -515,7 +515,8 @@ function sample(x,z){
       h+=land*mh;
       sw=ws*smooth(.1,.3,e)*(1-smooth(3,22,mh));h=lerp(h,bog(),sw);}}
   TS.h=h;TS.e=e;TS.wj=wj;TS.ws=ws;TS.wv=wv;TS.wd=wd;TS.sw=sw;TS.wt=wt;TS.wb=wb;TS.wu=wu;TS.wi=wi;TS.T=T;TS.wet=wet;return h;}
-function hAt(x,z){const gx=clamp((x+S/2)/D,0,N-.001),gz=clamp((z+S/2)/D,0,N-.001);
+var BRG=[];
+function hAt(x,z){if(BRG.length){const q=bridgeH(x,z);if(q!==null)return q;}const gx=clamp((x+S/2)/D,0,N-.001),gz=clamp((z+S/2)/D,0,N-.001);
   const i=gx|0,j=gz|0,fx=gx-i,fz=gz-j,k=i+j*NV;
   return (H[k]*(1-fx)+H[k+1]*fx)*(1-fz)+(H[k+NV]*(1-fx)+H[k+NV+1]*fx)*fz;}
 const cellAt=(x,z)=>clamp(Math.round((x+S/2)/D),0,N)+clamp(Math.round((z+S/2)/D),0,N)*NV;
@@ -1229,10 +1230,57 @@ function archSpec(kind,id,R,i){const pick=a=>a[R()*a.length|0],rr=(a,b)=>a+R()*(
 function rectOf(cx,cz,w,d,ry,pad){return{cx,cz,ux:Math.cos(ry),uz:-Math.sin(ry),vx:Math.sin(ry),vz:Math.cos(ry),hw:w/2+(pad||0),hd:d/2+(pad||0)};}
 function rectHit(A,B){const ax=[[A.ux,A.uz],[A.vx,A.vz],[B.ux,B.uz],[B.vx,B.vz]],dx=B.cx-A.cx,dz=B.cz-A.cz;
   for(const[x,z]of ax){const rA=A.hw*Math.abs(A.ux*x+A.uz*z)+A.hd*Math.abs(A.vx*x+A.vz*z),rB=B.hw*Math.abs(B.ux*x+B.uz*z)+B.hd*Math.abs(B.vx*x+B.vz*z);if(Math.abs(dx*x+dz*z)>=rA+rB)return false;}return true;}
+/* ---------- stream, stone embankments, arched bridges, ducks ---------- */
+var DUCKS=[];
+const STREAM_LOCAL=[[27,-48],[24,-34],[27,-22],[23,-9],[25,3],[29,15],[25,29],[28,48]];
+function bridgeH(x,z){for(const b of BRG){const dx=x-b.x,dz=z-b.z;if(dx*dx+dz*dz>b.R2)continue;const u=Math.abs(dx*b.ux+dz*b.uz),v=Math.abs(dx*b.vx+dz*b.vz);if(u<b.U&&v<b.V)return b.h0+bridgeHump(b,u);}return null;}
+function bridgeHump(b,u){return u<=b.Uc?b.H:b.H*.5*(1+Math.cos(Math.PI*Math.min(1,(u-b.Uc)/b.ramp)));}
+function segX(a,b,c,d){const r=[b[0]-a[0],b[1]-a[1]],s=[d[0]-c[0],d[1]-c[1]],den=r[0]*s[1]-r[1]*s[0];if(Math.abs(den)<1e-6)return null;const t=((c[0]-a[0])*s[1]-(c[1]-a[1])*s[0])/den,u=((c[0]-a[0])*r[1]-(c[1]-a[1])*r[0])/den;if(t<0||t>1||u<0||u>1)return null;return[a[0]+r[0]*t,a[1]+r[1]*t];}
+function planBridges(streets){const out=[],sw=streets[4];for(const st of streets){if(st===sw||st.water||st.n==='alley')continue;
+  for(let i=1;i<st.p.length;i++)for(let j=1;j<sw.p.length;j++){const q=segX(st.p[i-1],st.p[i],sw.p[j-1],sw.p[j]);if(!q)continue;
+    let ux=st.p[i][0]-st.p[i-1][0],uz=st.p[i][1]-st.p[i-1][1],l=Math.hypot(ux,uz);ux/=l;uz/=l;let wx=sw.p[j][0]-sw.p[j-1][0],wz=sw.p[j][1]-sw.p[j-1][1];l=Math.hypot(wx,wz);wx/=l;wz/=l;
+    const sinp=Math.abs(ux*wz-uz*wx);if(sinp<.55)continue;const Uc=2.45/sinp,ramp=5.8;
+    out.push({x:q[0],z:q[1],ux,uz,vx:-uz,vz:ux,Uc,ramp,U:Uc+ramp,V:st.hw+1.0,H:1.6,h0:0,R2:Math.pow(Uc+ramp+st.hw+3,2),hw:st.hw,wx,wz});}}
+  return out;}
+function inBridge(b,x,z,pu,pv){const dx=x-b.x,dz=z-b.z;return Math.abs(dx*b.ux+dz*b.uz)<b.Uc+pu&&Math.abs(dx*b.vx+dz*b.vz)<b.V+pv;}
+function buildStream(T,g){const sw=TP.streets[4],bridges=TP.bridges;BRG=bridges.map(b=>Object.assign(b,{h0:T.h,x:T.x+b.x,z:T.z+b.z}));DUCKS=[];
+  const stone=texMat('stone',0xc2bcae,.8,.5),cap=texMat('stone',0xd6d0c0,.6,.3),grp=new THREE.Group();g.add(grp);
+  const nrm=(p)=>[-p.tz,p.tx];
+  // water ribbon
+  const pos=[],uv=[],idx=[],step=1.2;let n=0;for(let s=0;s<=sw.len+.01;s+=step){const p=TP.at(sw,s),[nx,nz]=nrm(p);pos.push(p.x+nx*1.65,.22,p.z+nz*1.65,p.x-nx*1.65,.22,p.z-nz*1.65);uv.push(0,s/4,1,s/4);if(n>0){const a=(n-1)*2;idx.push(a,a+2,a+1,a+1,a+2,a+3);}n++;}
+  const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));wg.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));wg.setIndex(idx);wg.computeVertexNormals();
+  const wm=new THREE.Mesh(wg,new THREE.MeshLambertMaterial({color:0x3f92c4,emissive:0x0a2a40,transparent:true,opacity:.86,side:THREE.DoubleSide}));wm.userData.keep=true;g.add(wm);
+  const bed=new THREE.Mesh(wg,new THREE.MeshLambertMaterial({color:0x6a665c,side:THREE.DoubleSide}));bed.position.y=-.17;bed.userData.keep=true;g.add(bed);
+  // embankment walls
+  for(let s=0;s<=sw.len;s+=1.3){const p=TP.at(sw,s),[nx,nz]=nrm(p),ang=Math.atan2(-p.tz,p.tx);
+    for(const sg of[-1,1]){const x=p.x+nx*sg*1.9,z=p.z+nz*sg*1.9;let skip=false;for(const b of bridges)if(inBridge({x:b.x-T.x,z:b.z-T.z,ux:b.ux,uz:b.uz,vx:b.vx,vz:b.vz,Uc:b.Uc,V:b.V},x,z,.2,.5))skip=true;if(skip)continue;
+      const w=tbox(1.4,.9,.55,stone,x,.2,z,grp);w.rotation.y=ang;const c=tbox(1.5,.12,.72,cap,x,.7,z,grp);c.rotation.y=ang;addTrunk(T.x+x,T.z+z,.6);}}
+  for(const sgn of[0,1]){const p=TP.at(sw,sgn?sw.len:0),[nx,nz]=nrm(p),ang=Math.atan2(-p.tz,p.tx);const w=tbox(.6,.9,4.0,stone,p.x,.2,p.z,grp);w.rotation.y=ang;}
+  // bridges
+  for(const b of bridges){const bg=new THREE.Group();bg.position.set(b.x-T.x,0,b.z-T.z);bg.rotation.y=Math.atan2(-b.uz,b.ux);grp.add(bg);const Wb=b.V*2,hump=u=>bridgeHump(b,Math.abs(u)),top=texMat('stone',0xaaa69a,Math.max(1,Wb/2),2);
+    const N=Math.ceil(2*b.U/.6);for(let k=0;k<N;k++){const u=-b.U+(k+.5)*2*b.U/N,y=hump(u),sl=(hump(u+.25)-hump(u-.25))/.5,ang=Math.atan(sl),len=.62/Math.cos(ang),over=Math.abs(u)<b.Uc;
+      const deck=tbox(len,.45,Wb,top,u,y-.22,0,bg);deck.rotation.z=ang;
+      if(!over&&y>.2)tbox(.62,y-.25,Wb-.4,stone,u,(y-.25)/2,0,bg);
+      for(const sgv of[-1,1]){const pr=tbox(len,.8,.4,stone,u,y+.4,sgv*(Wb/2-.2),bg);pr.rotation.z=ang;const cp=tbox(len+.05,.12,.56,cap,u,y+.84,sgv*(Wb/2-.2),bg);cp.rotation.z=ang;}}
+    // arched faces under the span
+    for(const sgv of[-1,1]){const sh=new THREE.Shape();sh.moveTo(-b.Uc,0);sh.lineTo(b.Uc,0);sh.lineTo(b.Uc,b.H-.45);sh.lineTo(-b.Uc,b.H-.45);sh.lineTo(-b.Uc,0);const ho=new THREE.Path();ho.absellipse(0,.1,b.Uc-.35,b.H-.9,0,Math.PI,false);ho.lineTo(b.Uc-.35,.1);sh.holes.push(ho);
+      const ex=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:.5,bevelEnabled:false}),stone);ex.position.set(0,0,sgv*(Wb/2-.5)+(sgv>0?0:0));if(sgv<0)ex.position.z=-Wb/2;ex.castShadow=true;bg.add(ex);}
+    for(const su of[-1,1])for(const sgv of[-1,1]){const u=su*(b.Uc+.4),y=hump(u);tbox(.55,1.7,.55,cap,u,y+.85,sgv*(Wb/2-.2),bg);tbox(.4,.4,.4,lampMat,u,y+1.9,sgv*(Wb/2-.2),bg);}
+    for(let u=-b.U;u<=b.U;u+=1.3)for(const sgv of[-1,1]){const wx=b.x-T.x+b.ux*u+b.vx*sgv*(Wb/2-.2),wz=b.z-T.z+b.uz*u+b.vz*sgv*(Wb/2-.2);addTrunk(T.x+wx,T.z+wz,.5);}}
+  for(let s=0;s<=sw.len;s+=1.5){const p=TP.at(sw,s);for(const o of[-1.1,0,1.1]){const x=p.x-p.tz*o,z=p.z+p.tx*o;let skip=false;for(const b of bridges)if(inBridge({x:b.x-T.x,z:b.z-T.z,ux:b.ux,uz:b.uz,vx:b.vx,vz:b.vz,Uc:b.Uc,V:b.V},x,z,.4,.1))skip=true;if(!skip)addTrunk(T.x+x,T.z+z,.8);}}
+  mergeGroup(grp);
+  // ducks
+  const dm=LM(0xf4f0e4),bm=LM(0xf0902a),gm=LM(0x4a7a3a);for(let k=0;k<6;k++){const d=new THREE.Group(),body=tbox(.5,.28,.7,dm,0,.2,0,d);tbox(.3,.2,.3,dm,0,.46,.28,d);tbox(.24,.24,.24,gm,0,.58,.34,d);tbox(.12,.06,.16,bm,0,.55,.52,d);tbox(.2,.18,.3,dm,.0,.34,-.34,d).rotation.x=-.5;g.add(d);
+    DUCKS.push({g:d,s:Math.random()*sw.len,dir:Math.random()<.5?-1:1,off:(Math.random()-.5)*1.7,sp:.5+Math.random()*.5,ph:Math.random()*6});}}
+function updateDucks(dt){if(!DUCKS.length||!TP)return;const sw=TP.streets[4],T=town;if(Math.hypot(player.x-T.x,player.z-T.z)>110)return;
+  for(const d of DUCKS){d.s+=d.dir*d.sp*dt;if(d.s<2){d.s=2;d.dir=1;}if(d.s>sw.len-2){d.s=sw.len-2;d.dir=-1;}
+    const p=TP.at(sw,d.s),nx=-p.tz,nz=p.tx;d.g.position.set(p.x+nx*d.off,.24+Math.sin(performance.now()/500+d.ph)*.02,p.z+nz*d.off);d.g.rotation.y=Math.atan2(p.tx*d.dir,p.tz*d.dir)+Math.sin(performance.now()/1400+d.ph)*.15;}}
+
 function planTown(T){const c=Math.cos(T.rot),sn=Math.sin(T.rot),Rt=(x,z)=>[x*c-z*sn,x*sn+z*c],R=mulberry(SEED^0x7011);
   const def=[{n:'main',hw:3.3,p:[[-46,7],[-30,4],[-16,1.5],[0,0],[16,-1.5],[30,-5],[46,-9]]},{n:'high',hw:3.0,p:[[1,-46],[-2,-30],[0,-14],[0,0],[0,14],[3,28],[9,40],[14,48]]},
     {n:'north',hw:2.2,p:[[-44,-22],[-26,-27],[-2,-29],[22,-26],[44,-24]]},{n:'south',hw:2.2,p:[[-44,26],[-26,29],[-6,28],[3,28],[20,26],[40,22]]}];
   const streets=def.map(d=>{const p=d.p.map(q=>Rt(q[0],q[1])),cum=[0];for(let i=1;i<p.length;i++)cum.push(cum[i-1]+Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]));return{n:d.n,hw:d.hw,p,cum,len:cum[cum.length-1]};});
+  {const p=STREAM_LOCAL.map(q=>Rt(q[0],q[1])),cum=[0];for(let i=1;i<p.length;i++)cum.push(cum[i-1]+Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]));streets.push({n:'stream',water:true,hw:3.1,p,cum,len:cum[cum.length-1]});}
   const at=(st,s)=>{s=Math.max(0,Math.min(st.len,s));let i=1;while(i<st.p.length-1&&st.cum[i]<s)i++;const a=st.p[i-1],b=st.p[i],L=st.cum[i]-st.cum[i-1]||1,t=(s-st.cum[i-1])/L,tx=(b[0]-a[0])/L,tz=(b[1]-a[1])/L;return{x:a[0]+(b[0]-a[0])*t,z:a[1]+(b[1]-a[1])*t,tx,tz};};
   const segDist=(x,z,st)=>{let best=1e9,bx=0,bz=0;for(let i=1;i<st.p.length;i++){const a=st.p[i-1],b=st.p[i],dx=b[0]-a[0],dz=b[1]-a[1],l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/l2)),px=a[0]+dx*t,pz=a[1]+dz*t,d=Math.hypot(x-px,z-pz);if(d<best){best=d;bx=px;bz=pz;}}return{d:best,x:bx,z:bz};};
   const lots=[],rects=[],R2=()=>Math.random();
@@ -1258,22 +1306,23 @@ function planTown(T){const c=Math.cos(T.rot),sn=Math.sin(T.rot),Rt=(x,z)=>[x*c-z
   const fill=(st,sgn,s0,s1,alleyOK,small)=>{let s=s0;while(s<s1&&lots.length<40){let kind=small?'alley':kinds[R()*kinds.length|0];if(!small&&need.length&&R()<.3)kind=need[0];
       const spec=archSpec(kind,null,R,lots.length),cd=mk(st,s+spec.w/2,sgn,spec.w,spec.d);
       if(okRect(cd.rect)){place(cd,spec);if(kind===need[0])need.shift();const alley=!small&&alleyOK&&R()<.3;let gap=.45+R()*1.1;
-        if(alley&&streets.length<14){gap=2.7;const p=at(st,s+spec.w+1.35),nx=-p.tz*sgn,nz=p.tx*sgn,x0=p.x+nx*st.hw,z0=p.z+nz*st.hw,e=[x0+nx*15,z0+nz*15],pp=[[x0,z0],[e[0],e[1]]];
-          streets.push({n:'alley',hw:1.05,p:pp,cum:[0,15],len:15});}
+        if(alley&&streets.length<15){gap=2.7;const p=at(st,s+spec.w+1.35),nx=-p.tz*sgn,nz=p.tx*sgn,x0=p.x+nx*st.hw,z0=p.z+nz*st.hw,e=[x0+nx*15,z0+nz*15],pp=[[x0,z0],[e[0],e[1]]];
+          if(segDist(e[0],e[1],streets[4]).d>7&&segDist(x0+nx*7,z0+nz*7,streets[4]).d>7)streets.push({n:'alley',hw:1.05,p:pp,cum:[0,15],len:15});}
         s+=spec.w+gap;}
       else s+=1.5;}};
   for(const st of streets.slice(0,4))for(const sgn of[-1,1])fill(st,sgn,4,st.len-4,true,false);
-  for(let a=4;a<streets.length;a++){const st=streets[a];for(const sgn of[-1,1])fill(st,sgn,1.5,13,false,true);}
+  for(let a=5;a<streets.length;a++){const st=streets[a];for(const sgn of[-1,1])fill(st,sgn,1.5,13,false,true);}
   // street lamps
   const lamps=[];for(const st of streets.slice(0,4)){let k=0;for(let s=8;s<st.len-3;s+=13){const p=at(st,s),sgn=k++%2?1:-1,x=p.x-p.tz*sgn*(st.hw+.35),z=p.z+p.tx*sgn*(st.hw+.35);
-    if(Math.hypot(x,z)<15.5||Math.hypot(x,z)>44||inLot(x,z,.6))continue;let bad=false;for(const l of lamps)if(Math.hypot(l[0]-x,l[1]-z)<7)bad=true;if(!bad)lamps.push([x,z]);}}
-  const paved=(x,z)=>{const rr=Math.hypot(x,z);if(rr<2.7)return 0;if(rr<11.1)return 1;const j=Math.sin(x*2.3+z*1.7)*.18;for(const st of streets)if(segDist(x,z,st).d<st.hw+j)return 1;return 0;};
+    if(Math.hypot(x,z)<15.5||Math.hypot(x,z)>44||inLot(x,z,.6)||segDist(x,z,streets[4]).d<4.6)continue;let bad=false;for(const l of lamps)if(Math.hypot(l[0]-x,l[1]-z)<7)bad=true;if(!bad)lamps.push([x,z]);}}
+  const paved=(x,z)=>{const rr=Math.hypot(x,z);if(rr<2.7)return 0;if(rr<11.1)return 1;const j=Math.sin(x*2.3+z*1.7)*.18;for(const st of streets)if(!st.water&&segDist(x,z,st).d<st.hw+j)return 1;return 0;};
   const lampP=[],lampA=[];for(let i=0;i<6;i++){let a=i/6*6.283+T.rot+.52,x,z,t=0;do{x=Math.cos(a)*14.5;z=Math.sin(a)*14.5;if(!onStreet(x,z,1.2)&&!inLot(x,z,1.2))break;a+=.06;}while(++t<30);lampP.push([x,z]);lampA.push(a);}
   let board=[0,15.6];for(let k=0;k<60;k++){const a=T.rot+1.57+k*.1,x=Math.cos(a)*15.6,z=Math.sin(a)*15.6;if(!onStreet(x,z,2)&&!inLot(x,z,2.2)){board=[x,z];break;}}
-  const randPt=()=>{if(R2()<.25){const a=R2()*6.283,r=3+R2()*7;return[Math.cos(a)*r,Math.sin(a)*r];}for(let t=0;t<20;t++){const st=streets[R2()*4|0],p=at(st,R2()*st.len),l=(R2()-.5)*st.hw*1.2,x=p.x-p.tz*l,z=p.z+p.tx*l;if(!inLot(x,z,.3)&&Math.hypot(x,z)<46)return[x,z];}return[4,4];};
-  return{streets,lots,rects,lamps,paved,onStreet,inLot,at,segDist,lampP,lampA,board,randPt};}
+  const randPt=()=>{if(R2()<.25){const a=R2()*6.283,r=3+R2()*7;return[Math.cos(a)*r,Math.sin(a)*r];}for(let t=0;t<20;t++){const st=streets[R2()*4|0],p=at(st,R2()*st.len),l=(R2()-.5)*st.hw*1.2,x=p.x-p.tz*l,z=p.z+p.tx*l;if(!inLot(x,z,.3)&&Math.hypot(x,z)<46&&segDist(x,z,streets[4]).d>3.6)return[x,z];}return[4,4];};
+  const bridges=planBridges(streets);
+  return{streets,bridges,lots,rects,lamps,paved,onStreet,inLot,at,segDist,lampP,lampA,board,randPt};}
 function buildTown(){PEN.length=0;townDoors=[];townSites=null;shops=[];villagers=[];NPCS=[];home=null;bakSmk.length=0;roofSnow.length=0;townFlowers.length=0;if(!town){townLight.intensity=0;return;}
-  const T=town,g=new THREE.Group();g.position.set(T.x,T.h,T.z);world.add(g);townLight.position.set(T.x,T.h+7,T.z);for(let q=0;q<12;q++)rng();TP=planTown(T);dressTown(T,g);
+  const T=town,g=new THREE.Group();g.position.set(T.x,T.h,T.z);world.add(g);townLight.position.set(T.x,T.h+7,T.z);for(let q=0;q<12;q++)rng();BRG=[];TP=planTown(T);dressTown(T,g);buildStream(T,g);
   const wood=LM(0x6a4a2a);
   for(const Lt of TP.lots){const sp=Lt.spec,id=sp.id||null,sd=id&&id!=='home'?SHOPS[id]:null,bx=Lt.x,bz=Lt.z,ry=Lt.ry,sa=Math.sin(ry),ca=Math.cos(ry),b=new THREE.Group();b.position.set(bx,0,bz);b.rotation.y=ry;g.add(b);
     if(sp.kind==='home'){const o=buildCottage(b);home={x:T.x+bx+sa*(o.d/2+2.4),z:T.z+bz+ca*(o.d/2+2.4)};townDoors.push({x:T.x+bx+sa*(o.d/2+1.3),z:T.z+bz+ca*(o.d/2+1.3)});for(const ox of[-o.w/3,0,o.w/3])addTrunk(T.x+bx+ox*ca,T.z+bz-ox*sa,o.d/2+.3);continue;}
@@ -1301,7 +1350,7 @@ function buildTown(){PEN.length=0;townDoors=[];townSites=null;shops=[];villagers
 function updateTown(dt,night){winMat.emissive.setRGB(night,night*.72,night*.32);lampMat.emissive.setRGB(night,night*.8,night*.4);
   townLight.intensity=town?night*1.5:0;if(!town)return;
   if(fc%60===0)updateField();
-  updatePen(dt);
+  updatePen(dt);updateDucks(dt);
   for(const v of villagers){if(v.fixed){walkAnim(v.g,0,dt);continue;}villTick(v,dt);}}
 function placeFinds(){finds=[];const gem=new THREE.OctahedronGeometry(.26),ball=Ico(.22,1);
   if(city){const F=FINDS.pearl,mat=new THREE.MeshBasicMaterial({color:F.c});for(let i=0;i<10;i++){const a=rng()*6.283,r=city.R0*(.35+rng()*.75),x=city.x+Math.cos(a)*r,z=city.z+Math.sin(a)*r,m=new THREE.Mesh(ball,mat);
@@ -3850,7 +3899,7 @@ if(new URLSearchParams(location.search).has('galleryData')){
   });
   parent.postMessage({type:'jungle-gallery',action:'ready'},'*');
 }
-window.__jungle={rinfo:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles,geo:renderer.info.memory.geometries}),town:()=>town&&{x:town.x,z:town.z,h:town.h,rot:town.rot},plan:()=>TP&&{lots:TP.lots.map(l=>[l.spec.kind,l.spec.id||'',+l.x.toFixed(1),+l.z.toFixed(1)]),streets:TP.streets.length,lamps:TP.lamps.length},isl:()=>ISL&&{x:ISL.x,y:ISL.y,z:ISL.z,shop:ISL.shopPos},wing:()=>{SAVE.owned.wings=1;},warp:(x,y,z,vy)=>{player.x=x;player.y=y;player.z=z;player.vy=vy||0;player.ground=false;},key:(k,v)=>{keys[k]=v;},wingE:()=>WING.e,bio:id=>bioPts[id].slice(0,80),vegK:()=>vegInst.filter(m=>m.userData.key).map(m=>m.userData.key+':'+m.count+'x'+(m.geometry.attributes.position.count/3|0)).join(' '),veg:()=>{const o={};for(const m of vegInst){const k=m.count;o[k+'_'+(m.geometry.attributes.position.count/3|0)]=(o[k+'_'+(m.geometry.attributes.position.count/3|0)]||0)+1;}return{meshes:vegInst.length,inst:vegInst.reduce((a,m)=>a+m.count,0),tris:vegInst.reduce((a,m)=>a+m.count*m.geometry.attributes.position.count/3,0)|0};},home:()=>home,enterHome,exitHome,setBuild,placed:()=>placed,indoor:()=>indoor,openWard,FURN,ship:()=>SHIP,callShip:()=>callShip(true),wrecks:()=>wrecks,trenches:()=>trenches,TRM,volcano:()=>volcano,volcN:()=>volcN,step:n=>{for(let i=0;i<n;i++)tick(.05);},ev:k=>startEvent(k),evs:()=>EV&&[EV.kind,EV.t],finds:()=>finds.map(f=>f.key),hot:()=>HOT,herds:()=>herds,animals:()=>animals,pet:()=>pets,adopt:k=>adopt(k),breeds:()=>Object.keys(BREEDS),pen:()=>PEN.length,penPos:()=>PEN[0]&&[PEN[0].wx,PEN[0].wz],seaPet:()=>seaPet,give:()=>give(),treasures:()=>treasures,near:()=>[nearAnimal&&nearAnimal.sp.name,nearSea&&nearSea.kind],air:()=>air,life:()=>seaLife,seaMount:()=>seaMount,city:()=>city,npcs:()=>NPCS,save:()=>SAVE,sea:()=>[seaLife.length,schools.length,mers.length],setY:y=>{player.y=y;player.vy=0;},tps:()=>TPS,tp:i=>teleport(i),build,horses:()=>horses,farm:()=>farm,use:()=>useItem(),inter:()=>interact(),sel:i=>{hotSel=i;renderHot();},town:()=>town,shops:()=>shops,go:(x,z)=>{player.x=x;player.z=z;player.y=hAt(x,z)+1.7;},cam:a=>{DBG=a;},falls:()=>falls,sea:SEA,cal:CAL,cropOK:cropSeasonOK,enterMuseum,rodP:()=>rodP,bobM:()=>bobM,FSH,musG:()=>musG,donate,musRewards,musSlots:()=>musSlots,FISH,BUGS,fishAct,bugs:()=>bugs,pickFish,villagers:()=>villagers,mers:()=>mers,townDoors:()=>townDoors,sites:()=>townSites,openMus,netSwing,startCave,caves:()=>caves,cv:()=>CV,PHP,swing,changeFloor,caveInteract,NODE,heal,enterBakery:()=>enterBakery(shops.find(s=>s.id==='bakery')),bakSeats,sitting:()=>sitting,bakNear,roomKind:()=>roomKind,seeds:()=>shopItems('seeds'),roofs:()=>roofSnow,setSeason:n=>setSeasonLock(n==null?'auto':String(n)),set:(t,w)=>{tod=t;if(w){setWeather(w);Object.assign(W,WX[w]);}},player,hAt,bioAt,G,
+window.__jungle={rinfo:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles,geo:renderer.info.memory.geometries}),town:()=>town&&{x:town.x,z:town.z,h:town.h,rot:town.rot},plan:()=>TP&&{lots:TP.lots.map(l=>[l.spec.kind,l.spec.id||'',+l.x.toFixed(1),+l.z.toFixed(1)]),streets:TP.streets.length,lamps:TP.lamps.length,bridges:BRG.map(b=>[+b.x.toFixed(1),+b.z.toFixed(1),+b.Uc.toFixed(1),+b.V.toFixed(1)]),bh:(x,z)=>hAt(x,z)},isl:()=>ISL&&{x:ISL.x,y:ISL.y,z:ISL.z,shop:ISL.shopPos},wing:()=>{SAVE.owned.wings=1;},warp:(x,y,z,vy)=>{player.x=x;player.y=y;player.z=z;player.vy=vy||0;player.ground=false;},key:(k,v)=>{keys[k]=v;},wingE:()=>WING.e,bio:id=>bioPts[id].slice(0,80),vegK:()=>vegInst.filter(m=>m.userData.key).map(m=>m.userData.key+':'+m.count+'x'+(m.geometry.attributes.position.count/3|0)).join(' '),veg:()=>{const o={};for(const m of vegInst){const k=m.count;o[k+'_'+(m.geometry.attributes.position.count/3|0)]=(o[k+'_'+(m.geometry.attributes.position.count/3|0)]||0)+1;}return{meshes:vegInst.length,inst:vegInst.reduce((a,m)=>a+m.count,0),tris:vegInst.reduce((a,m)=>a+m.count*m.geometry.attributes.position.count/3,0)|0};},home:()=>home,enterHome,exitHome,setBuild,placed:()=>placed,indoor:()=>indoor,openWard,FURN,ship:()=>SHIP,callShip:()=>callShip(true),wrecks:()=>wrecks,trenches:()=>trenches,TRM,volcano:()=>volcano,volcN:()=>volcN,step:n=>{for(let i=0;i<n;i++)tick(.05);},ev:k=>startEvent(k),evs:()=>EV&&[EV.kind,EV.t],finds:()=>finds.map(f=>f.key),hot:()=>HOT,herds:()=>herds,animals:()=>animals,pet:()=>pets,adopt:k=>adopt(k),breeds:()=>Object.keys(BREEDS),pen:()=>PEN.length,penPos:()=>PEN[0]&&[PEN[0].wx,PEN[0].wz],seaPet:()=>seaPet,give:()=>give(),treasures:()=>treasures,near:()=>[nearAnimal&&nearAnimal.sp.name,nearSea&&nearSea.kind],air:()=>air,life:()=>seaLife,seaMount:()=>seaMount,city:()=>city,npcs:()=>NPCS,save:()=>SAVE,sea:()=>[seaLife.length,schools.length,mers.length],setY:y=>{player.y=y;player.vy=0;},tps:()=>TPS,tp:i=>teleport(i),build,horses:()=>horses,farm:()=>farm,use:()=>useItem(),inter:()=>interact(),sel:i=>{hotSel=i;renderHot();},town:()=>town,shops:()=>shops,go:(x,z)=>{player.x=x;player.z=z;player.y=hAt(x,z)+1.7;},cam:a=>{DBG=a;},falls:()=>falls,sea:SEA,cal:CAL,cropOK:cropSeasonOK,enterMuseum,rodP:()=>rodP,bobM:()=>bobM,FSH,musG:()=>musG,donate,musRewards,musSlots:()=>musSlots,FISH,BUGS,fishAct,bugs:()=>bugs,pickFish,villagers:()=>villagers,mers:()=>mers,townDoors:()=>townDoors,sites:()=>townSites,openMus,netSwing,startCave,caves:()=>caves,cv:()=>CV,PHP,swing,changeFloor,caveInteract,NODE,heal,enterBakery:()=>enterBakery(shops.find(s=>s.id==='bakery')),bakSeats,sitting:()=>sitting,bakNear,roomKind:()=>roomKind,seeds:()=>shopItems('seeds'),roofs:()=>roofSnow,setSeason:n=>setSeasonLock(n==null?'auto':String(n)),set:(t,w)=>{tod=t;if(w){setWeather(w);Object.assign(W,WX[w]);}},player,hAt,bioAt,G,
   info:()=>({falls:falls.length,animals:animals.length,rivers:riverPaths.length,bio:[0,1,2,3,4,5,6,7,8].map(i=>BIO.reduce((a,b)=>a+(b===i),0)),maxH:Math.max.apply(null,H)}),
   goBio:(id,n)=>{const p=bioPts[id];if(!p.length)return false;const k=((n||0)*2)%p.length&~1;player.x=p[k];player.z=p[k+1];player.y=hAt(p[k],p[k+1])+1.7;return true;},
   goFall:i=>{const f=falls[i||0];if(!f)return false;const d=Math.hypot(f.x,f.z);player.x=f.x+f.x/d*26;player.z=f.z+f.z/d*26;player.y=hAt(player.x,player.z)+1.7;player.yaw=Math.atan2(player.x-f.x,player.z-f.z);player.pitch=.15;return f;}};
